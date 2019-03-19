@@ -1,40 +1,103 @@
 const express = require("express");
 const _ = require("lodash");
 const bodyParser = require("body-parser");
+const cors = require("cors");
+const config = require("./config/config");
 const { ObjectID } = require("mongodb");
+const passport = require("passport");
 
 var { mongoose } = require("./db/mongoose");
 var { User } = require("./models/user");
+var { Group } = require("./models/group");
 
 var app = express();
-
+app.use(cors());
 app.use(bodyParser.json());
 
-app.post("/users", (req, res) => {
+app.use("/auth", require("./routes/auth"));
+app.use("/", require("./routes/index"));
+
+//Create group
+app.post("/groups", (req, res) => {
   var body = _.pick(req.body, [
     "name",
-    "sex",
+    "description",
+    "address",
+    "city",
     "age",
-    "phoneno",
-    "email",
-    "password"
+    "diseases",
+    "interests",
+    "time"
   ]);
-  var user = new User(body);
+  var group = new Group(body);
 
-  user
+  group
     .save()
-    .then(user => {
-      res.send(user);
+    .then(group => {
+      res.send(group);
     })
     .catch(e => {
       res.status(400).send(e);
     });
 });
 
-app.post("/users/login", (req, res) => {
-  var body = _.pick(req.body, ["email", "password"]);
-
-  res.send(body); //just like that
+//RETURN all groups
+app.get("/groups/all", (req, res) => {
+  Group.find().then(
+    groups => {
+      res.send({ groups });
+    },
+    e => {
+      res.status(400).send(e);
+    }
+  );
 });
+
+//RETURN group by id
+app.get("/group/:id", (req, res) => {
+  var id = req.params.id;
+  if (!ObjectID.isValid(id)) {
+    return res.status(404).send();
+  }
+  Group.findById(id)
+    .then(group => {
+      if (!group) {
+        return res.status(404).send();
+      }
+      res.send({ group });
+    })
+    .catch(e => {
+      res.status(400).send(e);
+    });
+});
+
+//Join an existing group
+app.get(
+  "/group/join/:id",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    var id = req.params.id;
+    if (!ObjectID.isValid(id)) {
+      return res.status(404).send();
+    }
+
+    Group.findById(id)
+      .then(group => {
+        group.members.forEach(memberId => {
+          if (memberId.equals(req.user._id)) {
+            return res.send("user already a member");
+          }
+        });
+        group.members.push(req.user._id);
+        group.save().then(group => {
+          req.user.groups.push(group._id);
+          req.user.save().then(user => {
+            res.send(user.groups);
+          });
+        });
+      })
+      .catch(e => res.status(400).send(e));
+  }
+);
 
 app.listen(3000);

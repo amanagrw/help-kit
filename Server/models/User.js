@@ -1,57 +1,55 @@
 const mongoose = require("mongoose");
-const validator = require("validator");
+const bcrypt = require("bcrypt");
+const { ObjectID } = require("mongodb");
+var ObjectId = mongoose.Schema.Types.ObjectId;
 
-var UserSchema = new mongoose.Schema({
+var userSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
     minlength: 3,
     trim: true
   },
-  sex: {
+  email: {
     type: String,
-    required: true,
-    trim: true
+    lowercase: true
+  },
+  password: {
+    type: String
   },
   age: {
     type: Number,
     required: true
   },
-  phoneno: {
-    type: Number,
-    required: true,
-    minlength: 10
-  },
-  email: {
+  city: {
     type: String,
     required: true,
-    trim: true,
-    minlength: 5,
-    unique: true,
-    validate: {
-      validator: validator.isEmail,
-      message: "{VALUE} is not a valid email"
-    }
+    trim: true
   },
-  password: {
-    type: String,
-    required: true,
-    minlength: 6
-  },
-  tokens: [
-    {
-      access: {
-        type: String,
-        required: true
-      },
-      token: {
-        type: String,
-        required: true
-      }
-    }
-  ]
+  diseases: [String],
+  interests: [String],
+  groups: [ObjectId]
 });
 
-var User = mongoose.model("Users", UserSchema);
+userSchema.pre("save", async function(next) {
+  try {
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(this.password, salt);
+    this.password = passwordHash;
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+userSchema.methods.isValidPassword = async function(newPassword) {
+  try {
+    return await bcrypt.compare(newPassword, this.password);
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+var User = mongoose.model("Users", userSchema);
 
 module.exports = { User };
