@@ -34,6 +34,7 @@ var groupSchema = new mongoose.Schema({
     start: Number,
     end: Number
   },
+  createdBy: ObjectId,
   members: [ObjectId]
 });
 
