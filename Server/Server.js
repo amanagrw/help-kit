@@ -231,6 +231,7 @@ app.get(
     let a = await akin.recommendation.getAllRecommendationsForUser(
       req.user._id
     );
+    res.send(b);
     console.log(b, a);
   }
 );
@@ -239,7 +240,6 @@ app.get("/states", async (req, res) => {
   let states = await State.find({});
   res.send(states);
 });
-
 
 app.get("/cities/:stateId", async (req, res) => {
   let stateId = req.params.stateId;
