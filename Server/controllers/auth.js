@@ -17,11 +17,17 @@ signToken = user => {
 module.exports = {
   signUp: async (req, res, next) => {
     const { name, email, password, age, city, diseases, interests } = req.body;
+    let imageFile = req.files.file;
 
     const foundUser = await User.findOne({ email: email });
     if (foundUser) {
       return res.status(403).json({ error: "Email is already in use" });
     }
+    imageFile.mv(`${__dirname}/public/${req.body.filename}.jpg`, function(err) {
+      if (err) {
+        return res.status(500).send(err);
+      }
+    });
     const newUser = new User({
       name,
       email,
@@ -29,7 +35,8 @@ module.exports = {
       age,
       city,
       diseases,
-      interests
+      interests,
+      image: `public/${req.body.filename}.jpg`
     });
 
     await newUser.save();

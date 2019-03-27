@@ -5,14 +5,20 @@ const cors = require("cors");
 const config = require("./config/config");
 const { ObjectID } = require("mongodb");
 const passport = require("passport");
+const akin = require("@asymmetrik/akin");
+const fileUpload = require("express-fileupload");
 
 var { mongoose } = require("./db/mongoose");
 var { User } = require("./models/user");
 var { Group } = require("./models/group");
+let { State } = require("./models/state");
+let { City } = require("./models/city");
 
 var app = express();
 app.use(cors());
 app.use(bodyParser.json());
+
+app.use(fileUpload());
 
 app.use("/auth", require("./routes/auth"));
 app.use("/", require("./routes/index"));
@@ -94,8 +100,12 @@ app.get(
         return res.send("user already a member");
       }
       group.members.push(req.user._id);
-      group.save().then(group => {
+      group.save().then(async group => {
         req.user.groups.push(group._id);
+        console.log("part 1");
+
+        let a = await akin.activity.log(req.user.id, group.id);
+        console.log("part 2", a);
         req.user.save().then(user => {
           res.send(user.groups);
         });
@@ -211,6 +221,30 @@ app.delete(
 //Return query-based groups
 app.get("/groupt/filter", (req, res) => {
   res.send(req.query);
+});
+
+app.get(
+  "/recommend",
+  passport.authenticate("jwt", { session: false }),
+  async (req, res) => {
+    let b = await akin.run();
+    let a = await akin.recommendation.getAllRecommendationsForUser(
+      req.user._id
+    );
+    console.log(b, a);
+  }
+);
+
+app.get("/states", async (req, res) => {
+  let states = await State.find({});
+  res.send(states);
+});
+
+
+app.get("/cities/:stateId", async (req, res) => {
+  let stateId = req.params.stateId;
+  let cities = await City.find({ stateId });
+  res.send(cities);
 });
 
 app.listen(3000);
