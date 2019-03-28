@@ -6,6 +6,8 @@ const config = require("./config/config");
 const { ObjectID } = require("mongodb");
 const passport = require("passport");
 
+require("./dummy-data/fake");
+
 var { mongoose } = require("./db/mongoose");
 var { User } = require("./models/user");
 var { Group } = require("./models/group");
@@ -208,9 +210,6 @@ app.delete(
   }
 );
 
-//Return query-based groups
-app.get("/groupt/filter", (req, res) => {
-  res.send(req.query);
-});
+//Return query-based groups -- not getting
 
 app.listen(3000);
