@@ -28,7 +28,8 @@ var userSchema = new mongoose.Schema({
   },
   diseases: [String],
   interests: [String],
-  groups: [ObjectId]
+  groups: [ObjectId],
+  image: String
 });
 
 userSchema.pre("save", async function(next) {

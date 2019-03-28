@@ -22,6 +22,19 @@ module.exports = {
     if (foundUser) {
       return res.status(403).json({ error: "Email is already in use" });
     }
+    let imageFile = null,
+      image = null;
+    if (req.files) {
+      imageFile = req.files.file;
+      imageFile.mv(`${__dirname}/public/${req.body.filename}.jpg`, function(
+        err
+      ) {
+        if (err) {
+          return res.status(500).send(err);
+        }
+      });
+      image = `public/${req.body.filename}.jpg`;
+    }
     const newUser = new User({
       name,
       email,
@@ -29,7 +42,8 @@ module.exports = {
       age,
       city,
       diseases,
-      interests
+      interests,
+      image
     });
 
     await newUser.save();
